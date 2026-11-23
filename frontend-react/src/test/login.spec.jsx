@@ -1,6 +1,10 @@
 import Login from '../pages/Login'
 
 import {
+  GoogleOAuthProvider
+} from '@react-oauth/google'
+
+import {
   montar,
   escribir,
   clic,
@@ -18,7 +22,12 @@ describe('Vista Login', () => {
   )
 
   afterEach(
-    () => vista.desmontar()
+    () => {
+      if (vista) {
+        vista.desmontar()
+        vista = null
+      }
+    }
   )
 
   it(
@@ -26,7 +35,13 @@ describe('Vista Login', () => {
     async () => {
 
       vista =
-        montar(<Login />)
+        montar(
+          <GoogleOAuthProvider
+            clientId="google-client-id-de-prueba"
+          >
+            <Login />
+          </GoogleOAuthProvider>
+        )
 
       const c =
         vista.contenedor
