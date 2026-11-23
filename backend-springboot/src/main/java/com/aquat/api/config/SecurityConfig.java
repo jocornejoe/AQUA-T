@@ -47,16 +47,15 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/productos/**", "/api/v1/categorias/**").permitAll()
 
                         .requestMatchers("/api/v1/productos/**").hasRole("ADMINISTRADOR")
                         .requestMatchers("/api/v1/usuarios/**").hasRole("ADMINISTRADOR")
+
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/boletas/mias").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/boletas").authenticated()

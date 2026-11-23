@@ -2,7 +2,6 @@ package com.aquat.api.exception;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -3,7 +3,7 @@ package com.aquat.api.model;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
-
+/** Guarda el rol como 'Administrador', 'Vendedor' o 'Cliente', igual que el ENUM de MySQL. */
 @Converter
 public class RolConverter implements AttributeConverter<Rol, String> {
 

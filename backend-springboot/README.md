@@ -23,10 +23,12 @@ Spring Security + JWT. El backend en Node (`../backend`) queda como referencia d
 
 1. Si la base aún no existe, ejecuta `../backend/db/schema.sql` en MySQL. Hibernate **no** crea ni modifica tablas
    (`ddl-auto=none`): usa las existentes.
-2. Copia `.env.example` como `.env` en esta carpeta. Puedes reutilizar las líneas `DB_*` de `../backend/.env`.
-   El `.env` NO se sube a GitHub.
+2. En `src/main/resources/`, copia `application-local.properties.example` como `application-local.properties`
+   y escribe la contraseña de tu usuario de MySQL. Ese archivo NO se sube a GitHub (está en `.gitignore`).
 3. Si las tablas están vacías, al iniciar se cargan categorías, productos de ejemplo y 3 usuarios.
    Si ya cargaste datos con `npm run seed`, se respetan y no se duplica nada.
+
+Opcionalmente puedes definir variables de entorno en vez del archivo:
 
 | Variable | Descripción | Valor por defecto |
 |---|---|---|

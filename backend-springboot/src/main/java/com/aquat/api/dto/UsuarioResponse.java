@@ -1,7 +1,9 @@
 package com.aquat.api.dto;
 
-import com.aquat.api.model.Usuario;
 import java.time.LocalDate;
+
+import com.aquat.api.model.Usuario;
+
 
 public record UsuarioResponse(
         Long id,

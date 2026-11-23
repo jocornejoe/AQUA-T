@@ -42,7 +42,7 @@ public class AuthService {
         return new AuthResponse(jwtService.generar(usuario), UsuarioResponse.from(usuario));
     }
 
-    /** El registro público siempre crea usuarios con rol CLIENTE. */
+
     public UsuarioResponse registrar(RegistroRequest r) {
         UsuarioRequest request = new UsuarioRequest(
                 r.run(), r.nombre(), r.apellidos(), r.correo(), r.contrasena(),

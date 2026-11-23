@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 
-
+/** Registro público: el rol siempre será CLIENTE. */
 public record RegistroRequest(
         @NotBlank(message = "El RUN es obligatorio")
         @Size(max = 9, message = "El RUN admite hasta 9 caracteres")
