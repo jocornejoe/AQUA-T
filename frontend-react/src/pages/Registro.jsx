@@ -1,17 +1,13 @@
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import {
-  agregarUsuario,
-  correoExiste,
-  runExiste
-} from '../services/usuariosService'
-
 import Navbar from '../components/Navbar'
-
 import { regionesComunas } from '../data/regiones'
+import { registrarCliente } from '../services/registroService'
 
 import {
+  formatearRunEntrada,
   validarRun,
   validarNombreRegistro,
   validarApellidos,
@@ -25,22 +21,21 @@ import {
   validarDireccion
 } from '../utils/validacionesRegistro'
 
+const estadoInicial = {
+  run: '',
+  nombre: '',
+  apellidos: '',
+  correo: '',
+  contrasena: '',
+  confirmarContrasena: '',
+  telefono: '',
+  fechaNacimiento: '',
+  region: '',
+  comuna: '',
+  direccion: ''
+}
+
 function Registro() {
-
-  const estadoInicial = {
-    run: '',
-    nombre: '',
-    apellidos: '',
-    correo: '',
-    contrasena: '',
-    confirmarContrasena: '',
-    telefono: '',
-    fechaNacimiento: '',
-    region: '',
-    comuna: '',
-    direccion: ''
-  }
-
   const [formulario, setFormulario] =
     useState(estadoInicial)
 
@@ -53,264 +48,182 @@ function Registro() {
   const [registroExitoso, setRegistroExitoso] =
     useState(false)
 
+  const [procesando, setProcesando] =
+    useState(false)
+
+  const regionSeleccionada =
+    formulario.region === ''
+      ? null
+      : regionesComunas[Number(formulario.region)]
+
   const comunasDisponibles =
-    formulario.region !== ''
-      ? regionesComunas[
-          Number(formulario.region)
-        ].comunas
-      : []
+    regionSeleccionada?.comunas || []
 
-  function validarCampo(campo, valor) {
-
-    let error = ''
-
+  function validarCampo(campo, datos) {
     switch (campo) {
-
       case 'run':
-        error = validarRun(valor)
-        break
+        return validarRun(datos.run)
 
       case 'nombre':
-        error =
-          validarNombreRegistro(valor)
-        break
+        return validarNombreRegistro(datos.nombre)
 
       case 'apellidos':
-        error =
-          validarApellidos(valor)
-        break
+        return validarApellidos(datos.apellidos)
 
       case 'correo':
-        error =
-          validarCorreoRegistro(valor)
-        break
+        return validarCorreoRegistro(datos.correo)
 
       case 'contrasena':
-        error =
-          validarContrasena(valor)
-        break
+        return validarContrasena(datos.contrasena)
 
       case 'confirmarContrasena':
-        error =
-          validarConfirmarContrasena(
-            formulario.contrasena,
-            valor
-          )
-        break
+        return validarConfirmarContrasena(
+          datos.contrasena,
+          datos.confirmarContrasena
+        )
 
       case 'telefono':
-        error =
-          validarTelefonoRegistro(valor)
-        break
+        return validarTelefonoRegistro(datos.telefono)
 
       case 'fechaNacimiento':
-        error =
-          validarFechaNacimiento(valor)
-        break
+        return validarFechaNacimiento(datos.fechaNacimiento)
 
       case 'region':
-        error =
-          validarRegion(valor)
-        break
+        return validarRegion(datos.region)
 
       case 'comuna':
-        error =
-          validarComuna(valor)
-        break
+        return validarComuna(datos.comuna)
 
       case 'direccion':
-        error =
-          validarDireccion(valor)
-        break
+        return validarDireccion(datos.direccion)
 
       default:
-        break
+        return ''
+    }
+  }
+
+  function actualizarCampo(evento) {
+    const { name, value } = evento.target
+
+    const valor =
+      name === 'run'
+        ? formatearRunEntrada(value)
+        : value
+
+    setFormulario(prev => ({
+      ...prev,
+      [name]: valor,
+      ...(name === 'region' ? { comuna: '' } : {})
+    }))
+
+    setErrores(prev => ({
+      ...prev,
+      [name]: '',
+      ...(name === 'region' ? { comuna: '' } : {}),
+      ...(name === 'contrasena'
+        ? { confirmarContrasena: '' }
+        : {})
+    }))
+
+    setMensajeForm('')
+    setRegistroExitoso(false)
+  }
+
+  function validarAlSalir(evento) {
+    const { name, value } = evento.target
+
+    const datosActualizados = {
+      ...formulario,
+      [name]: value
     }
 
     setErrores(prev => ({
       ...prev,
-      [campo]: error
+      [name]: validarCampo(name, datosActualizados)
     }))
-  }
-
-  function actualizarCampo(evento) {
-
-    const {
-      name,
-      value
-    } = evento.target
-
-    if (name === 'region') {
-
-      setFormulario(prev => ({
-        ...prev,
-        region: value,
-        comuna: ''
-      }))
-
-      setErrores(prev => ({
-        ...prev,
-        comuna: ''
-      }))
-
-    } else {
-
-      setFormulario(prev => ({
-        ...prev,
-        [name]: value
-      }))
-
-    }
-
-    validarCampo(name, value)
   }
 
   async function registrar(evento) {
-
     evento.preventDefault()
 
-    const nuevosErrores = {
+    if (procesando) return
 
-      run:
-        validarRun(formulario.run),
+    const nuevosErrores = {}
 
-      nombre:
-        validarNombreRegistro(
-          formulario.nombre
-        ),
-
-      apellidos:
-        validarApellidos(
-          formulario.apellidos
-        ),
-
-      correo:
-        validarCorreoRegistro(
-          formulario.correo
-        ),
-
-      contrasena:
-        validarContrasena(
-          formulario.contrasena
-        ),
-
-      confirmarContrasena:
-        validarConfirmarContrasena(
-          formulario.contrasena,
-          formulario.confirmarContrasena
-        ),
-
-      telefono:
-        validarTelefonoRegistro(
-          formulario.telefono
-        ),
-
-      fechaNacimiento:
-        validarFechaNacimiento(
-          formulario.fechaNacimiento
-        ),
-
-      region:
-        validarRegion(
-          formulario.region
-        ),
-
-      comuna:
-        validarComuna(
-          formulario.comuna
-        ),
-
-      direccion:
-        validarDireccion(
-          formulario.direccion
-        )
-    }
+    Object.keys(estadoInicial).forEach(campo => {
+      nuevosErrores[campo] =
+        validarCampo(campo, formulario)
+    })
 
     setErrores(nuevosErrores)
 
-    const hayErrores =
-      Object.values(nuevosErrores)
-        .some(error => error !== '')
+    const hayErrores = Object.values(nuevosErrores)
+      .some(error => error !== '')
 
     if (hayErrores) {
-
-    setMensajeForm(
-      'Ingrese la Informacion Faltante'
-    )
-  
-    setRegistroExitoso(false)
-  
-    return
-    }
-
-    if (
-    await runExiste(
-    formulario.run
-   )
-    ) {
-
-    setErrores(prev => ({
-        ...prev,
-        run: 'Este RUN ya está registrado'
-    }))
-
-    setMensajeForm(
-        'El RUN ingresado ya tiene una cuenta'
-    )
-
-    setRegistroExitoso(false)
-
-    return
-    }
-
-    if (
-    await correoExiste(
-      formulario.correo
-    )
-    ) {
-
-      setErrores(prev => ({
-        ...prev,
-        correo: 'Este correo ya está registrado'
-      }))
-
       setMensajeForm(
-        'El correo ingresado ya tiene una cuenta'
+        'Corrige los campos marcados antes de continuar.'
       )
-
       setRegistroExitoso(false)
-
       return
     }
-    
-        const regionSeleccionada =
-      regionesComunas[
-        Number(formulario.region)
-      ].region
 
-    await agregarUsuario({
-      run: formulario.run.trim().toUpperCase(),
-      nombre: formulario.nombre.trim(),
-      apellidos: formulario.apellidos.trim(),
-      correo: formulario.correo.trim().toLowerCase(),
-      contrasena: formulario.contrasena,
-      telefono: formulario.telefono.trim(),
-      fechaNacimiento: formulario.fechaNacimiento,
-      tipoUsuario: 'Cliente',
-      region: regionSeleccionada,
-      comuna: formulario.comuna,
-      direccion: formulario.direccion.trim()
-    })
+    if (!regionSeleccionada) {
+      setMensajeForm('Selecciona una región válida.')
+      return
+    }
 
-    setMensajeForm(
-      `¡Registro exitoso! Bienvenido/a ${formulario.nombre.trim()}.`
-    )
+    setProcesando(true)
+    setMensajeForm('')
+    setRegistroExitoso(false)
 
-    setRegistroExitoso(true)
+    try {
+      const usuarioCreado = await registrarCliente({
+        ...formulario,
+        region: regionSeleccionada.region
+      })
 
-    setFormulario(estadoInicial)
+      setMensajeForm(
+        `¡Registro exitoso! Bienvenido/a ${
+          usuarioCreado.nombre || formulario.nombre.trim()
+        }. Ya puedes iniciar sesión.`
+      )
 
-    setErrores({})
+      setRegistroExitoso(true)
+      setFormulario(estadoInicial)
+      setErrores({})
+
+    } catch (error) {
+      const mensaje =
+        error.message || 'No se pudo completar el registro'
+
+      setMensajeForm(mensaje)
+      setRegistroExitoso(false)
+
+      if (error.campos) {
+        setErrores(prev => ({
+          ...prev,
+          ...error.campos
+        }))
+      }
+
+      if (/RUN.*registrad/i.test(mensaje)) {
+        setErrores(prev => ({
+          ...prev,
+          run: mensaje
+        }))
+      }
+
+      if (/correo.*registrad/i.test(mensaje)) {
+        setErrores(prev => ({
+          ...prev,
+          correo: mensaje
+        }))
+      }
+
+    } finally {
+      setProcesando(false)
+    }
   }
 
   return (
@@ -318,15 +231,12 @@ function Registro() {
       <Navbar />
 
       <section className="contacto-section">
-
         <div className="container">
 
           <div className="text-end mb-3">
-
             <Link to="/login">
               ¿Ya tienes cuenta? Inicia sesión
             </Link>
-
           </div>
 
           <h2 className="contacto-titulo">
@@ -340,20 +250,17 @@ function Registro() {
 
           <div className="contacto-card">
 
-            <form
-              onSubmit={registrar}
-              noValidate
-            >
+            <form onSubmit={registrar} noValidate>
 
+              {/* RUN Y NOMBRE */}
               <div className="row">
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="run"
                     className="form-label"
                   >
-                    RUN
+                    RUN / RUT
                   </label>
 
                   <input
@@ -361,24 +268,25 @@ function Registro() {
                     className="form-control"
                     id="run"
                     name="run"
-                    placeholder="Ej: 19011022K"
-                    maxLength="9"
+                    placeholder="Ej: 12345678-5"
+                    maxLength={10}
                     value={formulario.run}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
+                    autoComplete="off"
                   />
 
                   <div className="form-text">
-                    Sin puntos ni guion. Entre 7 y 9 caracteres.
+                    Sin puntos y con guion.
+                    Ejemplo: 12345678-5
                   </div>
 
                   <div className="campo-error">
                     {errores.run}
                   </div>
-
                 </div>
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="nombre"
                     className="form-label"
@@ -391,9 +299,10 @@ function Registro() {
                     className="form-control"
                     id="nombre"
                     name="nombre"
-                    maxLength="50"
+                    maxLength={50}
                     value={formulario.nombre}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   />
 
                   <div className="form-text">
@@ -403,15 +312,14 @@ function Registro() {
                   <div className="campo-error">
                     {errores.nombre}
                   </div>
-
                 </div>
 
               </div>
 
+              {/* APELLIDOS Y CORREO */}
               <div className="row">
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="apellidos"
                     className="form-label"
@@ -424,23 +332,18 @@ function Registro() {
                     className="form-control"
                     id="apellidos"
                     name="apellidos"
-                    maxLength="100"
+                    maxLength={100}
                     value={formulario.apellidos}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   />
-
-                  <div className="form-text">
-                    Máx. 100 caracteres
-                  </div>
 
                   <div className="campo-error">
                     {errores.apellidos}
                   </div>
-
                 </div>
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="correo"
                     className="form-label"
@@ -453,27 +356,28 @@ function Registro() {
                     className="form-control"
                     id="correo"
                     name="correo"
-                    maxLength="100"
+                    maxLength={100}
                     value={formulario.correo}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   />
 
                   <div className="form-text">
-                    Solo @duoc.cl, @profesor.duoc.cl o @gmail.com
+                    Solo @duoc.cl, @profesor.duoc.cl
+                    o @gmail.com
                   </div>
 
                   <div className="campo-error">
                     {errores.correo}
                   </div>
-
                 </div>
 
               </div>
 
+              {/* CONTRASEÑAS */}
               <div className="row">
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="contrasena"
                     className="form-label"
@@ -486,9 +390,11 @@ function Registro() {
                     className="form-control"
                     id="contrasena"
                     name="contrasena"
-                    maxLength="20"
+                    maxLength={20}
                     value={formulario.contrasena}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
+                    autoComplete="new-password"
                   />
 
                   <div className="form-text">
@@ -498,11 +404,9 @@ function Registro() {
                   <div className="campo-error">
                     {errores.contrasena}
                   </div>
-
                 </div>
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="confirmarContrasena"
                     className="form-label"
@@ -515,23 +419,24 @@ function Registro() {
                     className="form-control"
                     id="confirmarContrasena"
                     name="confirmarContrasena"
-                    maxLength="20"
+                    maxLength={20}
                     value={formulario.confirmarContrasena}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
+                    autoComplete="new-password"
                   />
 
                   <div className="campo-error">
                     {errores.confirmarContrasena}
                   </div>
-
                 </div>
 
               </div>
 
+              {/* TELÉFONO Y FECHA DE NACIMIENTO */}
               <div className="row">
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="telefono"
                     className="form-label"
@@ -545,19 +450,18 @@ function Registro() {
                     id="telefono"
                     name="telefono"
                     placeholder="Ej: 912345678"
-                    maxLength="15"
+                    maxLength={15}
                     value={formulario.telefono}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   />
 
                   <div className="campo-error">
                     {errores.telefono}
                   </div>
-
                 </div>
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="fechaNacimiento"
                     className="form-label"
@@ -572,20 +476,20 @@ function Registro() {
                     name="fechaNacimiento"
                     value={formulario.fechaNacimiento}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   />
 
                   <div className="campo-error">
                     {errores.fechaNacimiento}
                   </div>
-
                 </div>
 
               </div>
 
+              {/* REGIÓN Y COMUNA */}
               <div className="row">
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="region"
                     className="form-label"
@@ -599,35 +503,28 @@ function Registro() {
                     name="region"
                     value={formulario.region}
                     onChange={actualizarCampo}
+                    onBlur={validarAlSalir}
                   >
-
                     <option value="">
                       -- Seleccione la región --
                     </option>
 
-                    {regionesComunas.map(
-                      (item, index) => (
-
-                        <option
-                          value={index}
-                          key={item.region}
-                        >
-                          {item.region}
-                        </option>
-
-                      )
-                    )}
-
+                    {regionesComunas.map((item, index) => (
+                      <option
+                        value={index}
+                        key={item.region}
+                      >
+                        {item.region}
+                      </option>
+                    ))}
                   </select>
 
                   <div className="campo-error">
                     {errores.region}
                   </div>
-
                 </div>
 
                 <div className="col-md-6 mb-3">
-
                   <label
                     htmlFor="comuna"
                     className="form-label"
@@ -641,40 +538,32 @@ function Registro() {
                     name="comuna"
                     value={formulario.comuna}
                     onChange={actualizarCampo}
-                    disabled={
-                      formulario.region === ''
-                    }
+                    onBlur={validarAlSalir}
+                    disabled={!regionSeleccionada}
                   >
-
                     <option value="">
                       -- Seleccione la comuna --
                     </option>
 
-                    {comunasDisponibles.map(
-                      comuna => (
-
-                        <option
-                          value={comuna}
-                          key={comuna}
-                        >
-                          {comuna}
-                        </option>
-
-                      )
-                    )}
-
+                    {comunasDisponibles.map(comuna => (
+                      <option
+                        value={comuna}
+                        key={comuna}
+                      >
+                        {comuna}
+                      </option>
+                    ))}
                   </select>
 
                   <div className="campo-error">
                     {errores.comuna}
                   </div>
-
                 </div>
 
               </div>
 
+              {/* DIRECCIÓN */}
               <div className="mb-3">
-
                 <label
                   htmlFor="direccion"
                   className="form-label"
@@ -687,9 +576,10 @@ function Registro() {
                   className="form-control"
                   id="direccion"
                   name="direccion"
-                  maxLength="300"
+                  maxLength={300}
                   value={formulario.direccion}
                   onChange={actualizarCampo}
+                  onBlur={validarAlSalir}
                 />
 
                 <div className="form-text">
@@ -699,11 +589,10 @@ function Registro() {
                 <div className="campo-error">
                   {errores.direccion}
                 </div>
-
               </div>
 
+              {/* MENSAJE DE REGISTRO */}
               {mensajeForm && (
-
                 <div
                   className={`mb-3 ${
                     registroExitoso
@@ -712,23 +601,31 @@ function Registro() {
                   }`}
                 >
                   {mensajeForm}
-                </div>
 
+                  {registroExitoso && (
+                    <p className="mt-2">
+                      <Link to="/login">
+                        Ir a iniciar sesión
+                      </Link>
+                    </p>
+                  )}
+                </div>
               )}
 
               <button
                 type="submit"
                 className="btn btn-enviar"
+                disabled={procesando}
               >
-                Registrar
+                {procesando
+                  ? 'Registrando...'
+                  : 'Registrar'}
               </button>
 
             </form>
 
           </div>
-
         </div>
-
       </section>
 
       <footer>

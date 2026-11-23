@@ -1,72 +1,100 @@
+
 const dominiosPermitidos =
   /^[^\s@]+@(duoc\.cl|profesor\.duoc\.cl|gmail\.com)$/i
 
 const soloTelefono =
   /^[0-9+\s-]{8,15}$/
 
-const soloRun =
-  /^[0-9]{6,8}[0-9kK]$/
+const formatoRun =
+  /^\d{6,8}-[\dK]$/
+
+const runSinFormato =
+  /^\d{6,8}[\dK]$/
+
+export function formatearRunEntrada(valor) {
+  const texto = String(valor ?? '')
+    .toUpperCase()
+    .replace(/[.\s]/g, '')
+    .replace(/[^0-9K-]/g, '')
+
+  const posicionGuion = texto.indexOf('-')
+
+  if (posicionGuion === -1) {
+    return texto
+      .replace(/\D/g, '')
+      .slice(0, 8)
+  }
+
+  const numero = texto
+    .slice(0, posicionGuion)
+    .replace(/\D/g, '')
+    .slice(0, 8)
+
+  const dv = texto
+    .slice(posicionGuion + 1)
+    .replace(/[^0-9K]/g, '')
+    .slice(0, 1)
+
+  return `${numero}-${dv}`
+}
+
+export function normalizarRun(run) {
+  return String(run ?? '')
+    .replace(/[.\-\s]/g, '')
+    .toUpperCase()
+}
 
 export function calcularDvRun(numeroRun) {
+  const numero = String(numeroRun ?? '')
+
+  if (!/^\d{6,8}$/.test(numero)) {
+    return null
+  }
+
   let suma = 0
   let multiplo = 2
 
-  for (
-    let i = numeroRun.length - 1;
-    i >= 0;
-    i--
-  ) {
-    suma +=
-      parseInt(numeroRun[i], 10) * multiplo
+  for (let i = numero.length - 1; i >= 0; i--) {
+    suma += Number(numero[i]) * multiplo
 
     multiplo =
-      multiplo < 7
-        ? multiplo + 1
-        : 2
+      multiplo === 7 ? 2 : multiplo + 1
   }
 
-  const resto =
-    11 - (suma % 11)
+  const resultado = 11 - (suma % 11)
 
-  if (resto === 11) return '0'
-  if (resto === 10) return 'K'
+  if (resultado === 11) return '0'
+  if (resultado === 10) return 'K'
 
-  return resto.toString()
+  return String(resultado)
 }
 
 export function runValido(run) {
-  if (!soloRun.test(run)) {
+  const limpio = normalizarRun(run)
+
+  if (!runSinFormato.test(limpio)) {
     return false
   }
 
-  const numero =
-    run.slice(0, -1)
+  const numero = limpio.slice(0, -1)
+  const dvIngresado = limpio.slice(-1)
 
-  const dvIngresado =
-    run.slice(-1).toUpperCase()
-
-  const dvCalculado =
-    calcularDvRun(numero)
-
-  return dvIngresado === dvCalculado
+  return calcularDvRun(numero) === dvIngresado
 }
 
 export function validarRun(run) {
-  const valor = run.trim()
+  const valor = String(run ?? '').trim().toUpperCase()
 
   if (valor === '') {
-    return 'Ingrese su RUN'
+    return 'Ingrese su RUN o RUT'
   }
 
-  if (
-    valor.length < 7 ||
-    valor.length > 9
-  ) {
-    return 'El RUN debe tener entre 7 y 9 caracteres'
+  if (!formatoRun.test(valor)) {
+    return 'Ingrese el RUN sin puntos y con guion (ej.: 12345678-5)'
   }
 
   if (!runValido(valor)) {
-    return 'El RUN ingresado no es válido (verifique el dígito verificador)'
+    return 'RUN inválido: revise el dígito verificador'
   }
 
   return ''
@@ -155,7 +183,7 @@ export function validarTelefonoRegistro(telefono) {
     valor !== '' &&
     !soloTelefono.test(valor)
   ) {
-    return 'Ingrese un teléfono válido (solo números, 8 a 15 dígitos)'
+    return 'Ingrese un teléfono válido'
   }
 
   return ''
@@ -166,10 +194,13 @@ export function validarFechaNacimiento(fecha) {
     return ''
   }
 
-  const hoy = new Date()
-  const fechaIngresada = new Date(fecha)
+  const ingresada = new Date(`${fecha}T00:00:00`)
 
-  if (fechaIngresada > hoy) {
+  if (Number.isNaN(ingresada.getTime())) {
+    return 'Fecha de nacimiento inválida'
+  }
+
+  if (ingresada > new Date()) {
     return 'La fecha de nacimiento no puede ser futura'
   }
 

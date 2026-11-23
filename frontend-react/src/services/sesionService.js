@@ -1,13 +1,39 @@
+
+import { jwtDecode } from 'jwt-decode'
+
 const SESION_KEY = 'aquaT_sesion'
 
-export function guardarSesion(usuario) {
+function tokenVigente(token) {
+  if (!token || typeof token !== 'string') {
+    return false
+  }
+
+  try {
+    const datos = jwtDecode(token)
+
+    return (
+      typeof datos.exp === 'number' &&
+      datos.exp * 1000 > Date.now()
+    )
+  } catch {
+    return false
+  }
+}
+
+export function guardarSesion(usuario, token) {
+  if (!tokenVigente(token)) {
+    throw new Error(
+      'No se recibió un token de sesión válido'
+    )
+  }
 
   const sesion = {
     id: usuario.id,
     correo: usuario.correo,
     nombre: usuario.nombre,
     apellidos: usuario.apellidos,
-    tipoUsuario: usuario.tipoUsuario
+    tipoUsuario: usuario.tipoUsuario,
+    token
   }
 
   sessionStorage.setItem(
@@ -23,23 +49,32 @@ export function guardarSesion(usuario) {
 }
 
 export function obtenerSesion() {
-
-  const datos =
-    sessionStorage.getItem(SESION_KEY)
+  const datos = sessionStorage.getItem(SESION_KEY)
 
   if (!datos) {
     return null
   }
 
   try {
-    return JSON.parse(datos)
+    const sesion = JSON.parse(datos)
+
+    if (!tokenVigente(sesion?.token)) {
+      sessionStorage.removeItem(SESION_KEY)
+      return null
+    }
+
+    return sesion
   } catch {
+    sessionStorage.removeItem(SESION_KEY)
     return null
   }
 }
 
-export function cerrarSesion() {
+export function obtenerToken() {
+  return obtenerSesion()?.token || null
+}
 
+export function cerrarSesion() {
   sessionStorage.removeItem(SESION_KEY)
 
   window.dispatchEvent(

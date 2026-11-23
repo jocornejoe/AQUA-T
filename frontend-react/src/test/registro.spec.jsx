@@ -1,3 +1,4 @@
+
 import Registro from '../pages/Registro'
 
 import {
@@ -5,8 +6,10 @@ import {
 } from '../data/regiones'
 
 import {
-  obtenerUsuarios
-} from '../services/usuariosService'
+  normalizarRun,
+  runValido,
+  validarRun
+} from '../utils/validacionesRegistro'
 
 import {
   montar,
@@ -17,117 +20,142 @@ import {
   esperarActualizacion
 } from './utils'
 
-describe('Vista Registro', () => {
-
+describe('Registro con Spring Boot', () => {
   let vista
+  let peticionRegistrada
 
-  beforeEach(
-    limpiarAlmacenamiento
-  )
+  beforeEach(() => {
+    limpiarAlmacenamiento()
+    peticionRegistrada = null
 
-  afterEach(
-    () => vista.desmontar()
-  )
+    window.fetch.and.callFake(async (url, opciones = {}) => {
+      if (
+        String(url).endsWith('/api/v1/auth/registro') &&
+        opciones.method === 'POST'
+      ) {
+        peticionRegistrada = JSON.parse(opciones.body)
 
-  it(
-    'crea el usuario como Cliente y limpia el formulario',
-    async () => {
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: 4,
+            nombre: peticionRegistrada.nombre,
+            tipoUsuario: 'Cliente'
+          })
+        }
+      }
 
-      const antes =
-        (await obtenerUsuarios())
-          .length
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({
+          error: 'Ruta no simulada'
+        })
+      }
+    })
+  })
 
-      vista =
-        montar(<Registro />)
-
-      const c =
-        vista.contenedor
-
-      llenar(c, {
-        run:
-          '123456785',
-
-        nombre:
-          'Alex',
-
-        apellidos:
-          'Turner Turner',
-
-        correo:
-          'turner.alex@gmail.com',
-
-        contrasena:
-          'clave123',
-
-        confirmarContrasena:
-          'clave123',
-
-        telefono:
-          '912345678',
-
-        fechaNacimiento:
-          '1986-01-06',
-
-        region:
-          '0',
-
-        comuna:
-          regionesComunas[0]
-            .comunas[0],
-
-        direccion:
-          'Calle Humbug 123'
-      })
-
-      clic(
-        boton(
-          c,
-          'Registrar'
-        )
-      )
-
-      await esperarActualizacion()
-
-      expect(
-        c.textContent
-      ).toContain(
-        '¡Registro exitoso! Bienvenido/a Alex.'
-      )
-
-      const usuarios =
-        await obtenerUsuarios()
-
-      expect(
-        usuarios.length
-      ).toBe(
-        antes + 1
-      )
-
-      const creado =
-        usuarios.find(
-          usuario =>
-            usuario.correo ===
-            'turner.alex@gmail.com'
-        )
-
-      expect(creado)
-        .toBeDefined()
-
-      expect(
-        creado.tipoUsuario
-      ).toBe('Cliente')
-
-      expect(
-        c.querySelector(
-          '[name="run"]'
-        ).value
-      ).toBe('')
-
-      expect(
-        c.querySelector(
-          '[name="correo"]'
-        ).value
-      ).toBe('')
+  afterEach(() => {
+    if (vista) {
+      vista.desmontar()
+      vista = null
     }
-  )
+  })
+
+  it('acepta RUN con puntos y guion', () => {
+    expect(
+      normalizarRun('12.345.678-5')
+    ).toBe('123456785')
+
+    expect(
+      runValido('12.345.678-5')
+    ).toBeTrue()
+
+    expect(
+      runValido('12345678-5')
+    ).toBeTrue()
+
+    expect(
+      validarRun('12.345.678-9')
+    ).not.toBe('')
+  })
+
+  it('registra un Cliente en Spring Boot', async () => {
+    vista = montar(<Registro />)
+
+    const contenedor = vista.contenedor
+
+    llenar(contenedor, {
+      run: '12.345.678-5',
+      nombre: 'Alex',
+      apellidos: 'Turner',
+      correo: 'turner.alex@gmail.com',
+      contrasena: 'clave123',
+      confirmarContrasena: 'clave123',
+      telefono: '912345678',
+      fechaNacimiento: '',
+      region: '0',
+      comuna: regionesComunas[0].comunas[0],
+      direccion: 'Calle Humbug 123'
+    })
+
+    clic(
+      boton(contenedor, 'Registrar')
+    )
+
+    await esperarActualizacion()
+
+    expect(peticionRegistrada).not.toBeNull()
+
+    expect(
+      peticionRegistrada.run
+    ).toBe('123456785')
+
+    expect(
+      peticionRegistrada.fechaNacimiento
+    ).toBeNull()
+
+    expect(
+      peticionRegistrada.tipoUsuario
+    ).toBeUndefined()
+
+    expect(
+      contenedor.textContent
+    ).toContain('¡Registro exitoso!')
+
+    expect(
+      contenedor.querySelector('[name="run"]').value
+    ).toBe('')
+  })
+
+  it('rechaza un RUN incorrecto', async () => {
+    vista = montar(<Registro />)
+
+    const contenedor = vista.contenedor
+
+    llenar(contenedor, {
+      run: '12.345.678-9',
+      nombre: 'Alex',
+      apellidos: 'Turner',
+      correo: 'turner.alex@gmail.com',
+      contrasena: 'clave123',
+      confirmarContrasena: 'clave123',
+      region: '0',
+      comuna: regionesComunas[0].comunas[0],
+      direccion: 'Calle Humbug 123'
+    })
+
+    clic(
+      boton(contenedor, 'Registrar')
+    )
+
+    await esperarActualizacion()
+
+    expect(peticionRegistrada).toBeNull()
+
+    expect(
+      contenedor.textContent
+    ).toContain('RUN inválido')
+  })
 })
