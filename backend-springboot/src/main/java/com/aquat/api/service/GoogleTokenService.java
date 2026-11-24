@@ -2,12 +2,12 @@ package com.aquat.api.service;
 
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,10 @@ import com.aquat.api.exception.BusinessException;
 @Service
 public class GoogleTokenService {
 
-    private final JwtDecoder decoder;
+    public record Identidad(String sub, String correo) {
+    }
+
+    private final NimbusJwtDecoder decoder;
     private final String clientId;
 
     public GoogleTokenService(
@@ -26,11 +29,13 @@ public class GoogleTokenService {
         this.clientId = clientId.trim();
 
         this.decoder = NimbusJwtDecoder
-                .withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
+                .withJwkSetUri(
+                        "https://www.googleapis.com/oauth2/v3/certs"
+                )
                 .build();
     }
 
-    public String verificarCorreo(String credential) {
+    public Identidad verificar(String credential) {
 
         if (clientId.isBlank()) {
             throw new BusinessException(
@@ -41,7 +46,7 @@ public class GoogleTokenService {
 
         if (credential == null || credential.isBlank()) {
             throw new BadCredentialsException(
-                    "La credencial de Google está vacía"
+                    "Falta la credencial de Google"
             );
         }
 
@@ -52,17 +57,25 @@ public class GoogleTokenService {
                     ? ""
                     : jwt.getIssuer().toString();
 
-            boolean issuerValido =
-                    issuer.equals("https://accounts.google.com") ||
-                    issuer.equals("accounts.google.com");
-
-            if (!issuerValido ||
-                    !jwt.getAudience().contains(clientId) ||
-                    jwt.getExpiresAt() == null ||
-                    !jwt.getExpiresAt().isAfter(Instant.now())) {
-
+            if (!Set.of(
+                    "https://accounts.google.com",
+                    "accounts.google.com"
+            ).contains(issuer)) {
                 throw new BadCredentialsException(
-                        "La credencial de Google no es válida"
+                        "Emisor de Google no válido"
+                );
+            }
+
+            if (!jwt.getAudience().contains(clientId)) {
+                throw new BadCredentialsException(
+                        "La credencial no pertenece a AQUA-T"
+                );
+            }
+
+            if (jwt.getExpiresAt() == null ||
+                    !jwt.getExpiresAt().isAfter(Instant.now())) {
+                throw new BadCredentialsException(
+                        "La credencial de Google expiró"
                 );
             }
 
@@ -70,35 +83,67 @@ public class GoogleTokenService {
 
             boolean correoVerificado =
                     Boolean.TRUE.equals(verificado) ||
-                    "true".equalsIgnoreCase(String.valueOf(verificado));
+                    "true".equalsIgnoreCase(
+                            String.valueOf(verificado)
+                    );
 
             String correo = jwt.getClaimAsString("email");
-            String dominioAlojado = jwt.getClaimAsString("hd");
+            String sub = jwt.getSubject();
 
-            if (!correoVerificado || correo == null || correo.isBlank()) {
+            if (!correoVerificado ||
+                    correo == null || correo.isBlank() ||
+                    sub == null || sub.isBlank()) {
                 throw new BadCredentialsException(
-                        "Google no ha verificado este correo"
+                        "Google no entregó una identidad verificada"
                 );
             }
 
             correo = correo.trim().toLowerCase(Locale.ROOT);
 
-            boolean googleAutoritativo =
-                    correo.endsWith("@gmail.com") ||
-                    (dominioAlojado != null && !dominioAlojado.isBlank());
+            int posicionArroba = correo.lastIndexOf('@');
 
-            if (!googleAutoritativo) {
+            if (posicionArroba < 1) {
                 throw new BadCredentialsException(
-                        "Este correo requiere autenticación tradicional"
+                        "Correo de Google no válido"
                 );
             }
 
-            return correo;
+            String dominio = correo.substring(posicionArroba + 1);
+
+            if (!Set.of(
+                    "gmail.com",
+                    "duoc.cl",
+                    "profesor.duoc.cl"
+            ).contains(dominio)) {
+                throw new BadCredentialsException(
+                        "El dominio de correo no está permitido"
+                );
+            }
+
+            String dominioAlojado = jwt.getClaimAsString("hd");
+
+            // Gmail está administrado por Google.
+            // Para otros dominios exigimos que Google
+            // Workspace confirme el dominio correspondiente.
+            if (!dominio.equals("gmail.com") &&
+                    (dominioAlojado == null ||
+                    !dominioAlojado.equalsIgnoreCase(dominio))) {
+                throw new BadCredentialsException(
+                        "Esta cuenta institucional requiere inicio de sesión tradicional"
+                );
+            }
+
+            return new Identidad(sub, correo);
 
         } catch (JwtException | IllegalArgumentException ex) {
             throw new BadCredentialsException(
                     "No se pudo verificar la credencial de Google"
             );
         }
+    }
+
+    // Conservamos compatibilidad con otras llamadas existentes.
+    public String verificarCorreo(String credential) {
+        return verificar(credential).correo();
     }
 }

@@ -62,3 +62,54 @@ export async function registrarCliente(datos) {
 
   return resultado
 }
+
+export async function registrarClienteGoogle(datos, credential) {
+  const cuerpo = {
+    credential,
+    run: normalizarRun(datos.run),
+    nombre: datos.nombre.trim(),
+    apellidos: datos.apellidos.trim(),
+    telefono: datos.telefono.trim(),
+    fechaNacimiento: datos.fechaNacimiento || null,
+    region: datos.region,
+    comuna: datos.comuna,
+    direccion: datos.direccion.trim()
+  }
+
+  let respuesta
+
+  try {
+    respuesta = await fetch(
+      `${API_BASE}/api/v1/auth/google/registro`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(cuerpo)
+      }
+    )
+  } catch {
+    throw new Error(
+      'No se pudo conectar con Spring Boot en el puerto 8080.'
+    )
+  }
+
+  const resultado = await respuesta.json()
+    .catch(() => null)
+
+  if (!respuesta.ok) {
+    throw new Error(
+      resultado?.error ||
+      `No se pudo registrar con Google (${respuesta.status})`
+    )
+  }
+
+  if (!resultado?.token || !resultado?.usuario) {
+    throw new Error(
+      'Spring Boot no devolvió la sesión del nuevo usuario.'
+    )
+  }
+
+  return resultado
+}

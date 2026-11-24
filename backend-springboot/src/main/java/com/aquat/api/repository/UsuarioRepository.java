@@ -15,4 +15,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
     boolean existsByCorreoIgnoreCaseAndIdNot(String correo, Long id);
 
     boolean existsByRunAndIdNot(String run, Long id);
+
+    Optional<Usuario> findByGoogleSub(String googleSub);
 }

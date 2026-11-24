@@ -27,6 +27,9 @@ public class Usuario {
     @Column(name = "contrasena_hash", nullable = false)
     private String contrasenaHash;
 
+    @Column(name = "google_sub", unique = true, length = 255)
+    private String googleSub;
+
     @Column(length = 20)
     private String telefono;
 
@@ -55,6 +58,7 @@ public class Usuario {
             fechaRegistro = LocalDateTime.now();
         }
     }
+
 
     public Long getId() { return id; }
 
@@ -107,4 +111,13 @@ public class Usuario {
     public LocalDateTime getFechaRegistro() { return fechaRegistro; }
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    public String getGoogleSub() {
+    return googleSub;
+    }
+
+    public void setGoogleSub(String googleSub) {
+    this.googleSub = googleSub;
+    }
+    
 }

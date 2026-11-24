@@ -248,6 +248,15 @@ function Registro() {
             y hacer seguimiento a tus pedidos.
           </p>
 
+          <div className="text-center mb-4">
+  <Link
+    to="/registro/google"
+    className="btn btn-outline-primary"
+  >
+    Registrarme con Google
+  </Link>
+</div>
+
           <div className="contacto-card">
 
             <form onSubmit={registrar} noValidate>
