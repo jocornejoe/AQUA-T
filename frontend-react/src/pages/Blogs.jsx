@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 
 import { blogs } from '../data/blogs'
 
@@ -9,9 +8,7 @@ function Blogs() {
   return (
     <>
       <Navbar />
-
-      <CategoryNav />
-
+      
       <header className="hero-productos d-flex align-items-center justify-content-center text-center text-white">
 
         <div className="hero-overlay"></div>

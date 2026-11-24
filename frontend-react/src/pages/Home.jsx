@@ -5,7 +5,6 @@ import {
 import { Link } from 'react-router-dom'
 
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 import ProductoCard from '../components/ProductoCard'
 
 import {
@@ -121,8 +120,6 @@ const [errorProductos,
   return (
     <>
       <Navbar />
-
-      <CategoryNav mostrarAuth />
 
       {/* HERO ORIGINAL */}
       <header className="hero-productos d-flex align-items-center justify-content-center text-center text-white">

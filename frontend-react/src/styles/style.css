@@ -786,3 +786,271 @@ footer {
         flex-wrap: wrap;
     }
 }
+
+/* =====================================
+   AQUA-T - Navegación principal
+   ===================================== */
+
+.aquat-nav-contenedor {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+.aquat-menu-panel {
+    margin-left: auto;
+    min-width: 0;
+}
+
+.aquat-menu-lista {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 3px;
+}
+
+.aquat-productos {
+    position: relative;
+}
+
+.aquat-productos-cabecera {
+    display: flex;
+    align-items: center;
+}
+
+.aquat-productos-cabecera .nav-link {
+    margin-right: 0;
+    padding-right: 3px !important;
+}
+
+.aquat-productos-flecha {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    padding: 8px 9px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.aquat-productos-flecha:hover,
+.aquat-productos-flecha[aria-expanded="true"] {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.aquat-productos-flecha:focus-visible,
+.aquat-menu-boton:focus-visible {
+    outline: 2px solid var(--aqua-claro);
+    outline-offset: 3px;
+}
+
+.aquat-productos-submenu {
+    position: absolute;
+    z-index: 3000;
+    top: calc(100% + 10px);
+    left: 0;
+
+    min-width: 225px;
+    padding: 8px;
+
+    background: #ffffff;
+    border: 1px solid #e0e5e9;
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(0, 53, 84, 0.22);
+}
+
+.aquat-productos-submenu a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--azul-profundo);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.aquat-productos-submenu a:hover,
+.aquat-productos-submenu a:focus-visible {
+    background: var(--fondo-claro);
+    color: var(--azul-medio);
+}
+
+.aquat-submenu-separador {
+    height: 1px;
+    margin: 6px 0;
+    background: #e1e6ea;
+}
+
+.aquat-usuario {
+    max-width: 155px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aquat-salir {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+}
+
+.aquat-menu-boton {
+    display: none;
+}
+
+/* Navegación adaptable para tablets y móviles */
+
+@media (max-width: 1199px) {
+
+    .aquat-nav-contenedor {
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .aquat-menu-boton {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+
+        width: 44px;
+        height: 42px;
+
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .aquat-menu-boton span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        border-radius: 2px;
+        background: #ffffff;
+    }
+
+    .aquat-menu-panel {
+        display: none;
+        flex-basis: 100%;
+        width: 100%;
+        margin-left: 0;
+        padding: 12px 0;
+
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .aquat-menu-panel-abierto {
+        display: block;
+        max-height: calc(100vh - 85px);
+        overflow-y: auto;
+    }
+
+    .aquat-menu-lista {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 4px;
+    }
+
+    .aquat-menu-lista .nav-item {
+        width: 100%;
+    }
+
+    .aquat-menu-lista .nav-link,
+    .aquat-menu-lista .icono-carrito {
+        display: block;
+        width: 100%;
+        padding: 11px 14px !important;
+        margin: 0;
+    }
+
+    .aquat-productos-cabecera {
+        width: 100%;
+    }
+
+    .aquat-productos-cabecera .nav-link {
+        flex: 1;
+    }
+
+    .aquat-productos-flecha {
+        width: 45px;
+        height: 42px;
+    }
+
+    .aquat-productos-submenu {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        margin-top: 5px;
+        margin-bottom: 8px;
+        box-shadow: none;
+    }
+
+    .aquat-usuario {
+        max-width: none;
+    }
+
+    .aquat-salir {
+        text-align: left;
+    }
+
+    .badge-carrito {
+        right: auto;
+        left: 105px;
+    }
+}
+
+/* Botón de registro con Google */
+
+.google-registro-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    padding: 12px 24px;
+
+    background-color: #ffffff;
+    color: #202124;
+
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+    transition:
+        background-color 0.2s,
+        box-shadow 0.2s,
+        transform 0.2s;
+}
+
+.google-registro-link:hover {
+    background-color: #f8fafd;
+    color: #202124;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+    transform: translateY(-1px);
+}
+
+.google-registro-link:focus-visible {
+    outline: 3px solid #4285f4;
+    outline-offset: 3px;
+}
+
+.google-registro-link svg {
+    flex-shrink: 0;
+}
+
+@media (max-width: 576px) {
+    .google-registro-link {
+        width: 100%;
+        padding: 13px 16px;
+    }
+}

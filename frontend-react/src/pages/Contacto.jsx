@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 
 import {
   validarNombre,
@@ -147,8 +146,6 @@ function Contacto() {
   return (
     <>
       <Navbar />
-
-      <CategoryNav />
 
       <section className="contacto-section">
 

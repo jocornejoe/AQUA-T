@@ -9,7 +9,6 @@ import {
 } from 'react-router-dom'
 import { agregarAlCarrito } from '../services/carritoService'
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 import ProductoCard from '../components/ProductoCard'
 import {
   categoriasProducto,
@@ -83,7 +82,6 @@ const [error, setError] =
     <>
       <Navbar />
 
-      <CategoryNav />
 
       <div className="text-center mb-4 mt-4">
         <h2

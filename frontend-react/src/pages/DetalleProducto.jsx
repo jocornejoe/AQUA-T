@@ -14,7 +14,6 @@ import {
 } from '../services/carritoService'
 
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 import ProductoCard from '../components/ProductoCard'
 
 import {
@@ -183,8 +182,6 @@ if (error) {
   return (
     <>
       <Navbar />
-
-      <CategoryNav />
 
       <div className="container my-4">
 

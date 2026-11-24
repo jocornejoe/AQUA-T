@@ -177,14 +177,6 @@ function RegistroGoogle() {
             los datos necesarios para registrarte en AQUA-T.
           </p>
 
-          <div className="text-center mb-4">
-          <Link
-            to="/registro/google"
-            className="btn btn-outline-primary"
-          >
-            Registrarme con Google
-          </Link>
-        </div>
 
           <div className="contacto-card">
 

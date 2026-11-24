@@ -1,13 +1,10 @@
 import Navbar from '../components/Navbar'
-import CategoryNav from '../components/CategoryNav'
 import Footer from '../components/Footer'
 
 function Nosotros() {
   return (
     <>
       <Navbar />
-
-      <CategoryNav />
 
       {/* Hero original */}
       <header className="hero-productos d-flex align-items-center justify-content-center text-center text-white">
