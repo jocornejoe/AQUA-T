@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
 import App from './App.jsx'
+import VigilanteSesion from './components/VigilanteSesion.jsx'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import './styles/style.css'
@@ -15,6 +16,7 @@ createRoot(
     <GoogleOAuthProvider
       clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
     >
+      <VigilanteSesion />
       <App />
     </GoogleOAuthProvider>
   </StrictMode>
