@@ -1,12 +1,5 @@
-import {
-  useEffect,
-  useState
-} from 'react'
-import {
-  Link,
-  useLocation,
-  useNavigate
-} from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import Navbar from '../components/Navbar'
 
@@ -17,125 +10,20 @@ import {
   vaciarCarrito
 } from '../services/carritoService'
 
-import {
-  obtenerSesion
-} from '../services/sesionService'
-
-import {
-  obtenerUsuarioPorId
-} from '../services/usuariosService'
-
-import {
-  crearPedido
-} from '../services/pedidosService'
-
-import {
-  regionesComunas
-} from '../data/regiones'
+import { obtenerSesion } from '../services/sesionService'
+import { crearPedido } from '../services/pedidosService'
+import { regionesComunas } from '../data/regiones'
 
 function Checkout() {
-
   const navigate = useNavigate()
   const location = useLocation()
 
+  const sesion = obtenerSesion()
   const carrito = obtenerCarrito()
 
-  const sesion = obtenerSesion()
-
-  const estadoInicial = {
-  nombre: '',
-  correo: '',
-  telefono: '',
-  region: '',
-  comuna: '',
-  direccion: ''
-}
-
-  const [formulario, setFormulario] =
-    useState(estadoInicial)
-
-  const [usuario, setUsuario] =
-    useState(null)
-
-  const [procesando,
-    setProcesando] =
-    useState(false)
-
-  useEffect(() => {
-
-  let activo = true
-
-  async function cargarUsuario() {
-
-    if (!sesion) {
-      return
-    }
-
-    try {
-
-      const datos =
-        await obtenerUsuarioPorId(
-          sesion.id
-        )
-
-      if (!activo) {
-        return
-      }
-
-      setUsuario(datos)
-
-      const indiceRegion =
-        regionesComunas.findIndex(
-          item =>
-            item.region ===
-            datos.region
-        )
-
-      setFormulario({
-        nombre:
-          `${datos.nombre} ${datos.apellidos}`
-            .trim(),
-
-        correo:
-          datos.correo || '',
-
-        telefono:
-          datos.telefono || '',
-
-        region:
-          indiceRegion >= 0
-            ? String(indiceRegion)
-            : '',
-
-        comuna:
-          datos.comuna || '',
-
-        direccion:
-          datos.direccion || ''
-      })
-
-    } catch (error) {
-
-      console.error(
-        'No se pudo cargar el usuario:',
-        error
-      )
-    }
-  }
-
-  cargarUsuario()
-
-  return () => {
-    activo = false
-  }
-
-}, [sesion?.id])
-
-  const [mensajeError, setMensajeError] =
-    useState('')
-
-  const cupon =
+  const cupon = String(
     location.state?.cupon || ''
+  ).trim().toUpperCase()
 
   const porcentajeDescuento =
     cupon === 'AQUA10'
@@ -144,154 +32,177 @@ function Checkout() {
         ? 0.20
         : 0
 
-  const subtotal =
-    calcularSubtotal(carrito)
+  const [formulario, setFormulario] = useState(() => {
+    const indiceRegion = regionesComunas.findIndex(
+      item => item.region === sesion?.region
+    )
 
-  const descuento =
-    subtotal * porcentajeDescuento
+    const comunaGuardada = sesion?.comuna || ''
 
-  const total =
-    subtotal - descuento
+    const comunaValida =
+      indiceRegion >= 0 &&
+      regionesComunas[indiceRegion].comunas.includes(
+        comunaGuardada
+      )
+
+    return {
+      nombre: [
+        sesion?.nombre,
+        sesion?.apellidos
+      ].filter(Boolean).join(' '),
+
+      correo: sesion?.correo || '',
+      telefono: sesion?.telefono || '',
+
+      region:
+        indiceRegion >= 0
+          ? String(indiceRegion)
+          : '',
+
+      comuna: comunaValida ? comunaGuardada : '',
+      direccion: sesion?.direccion || ''
+    }
+  })
+
+  const [procesando, setProcesando] = useState(false)
+  const [mensajeError, setMensajeError] = useState('')
+
+  const subtotal = calcularSubtotal(carrito)
+  const descuento = subtotal * porcentajeDescuento
+  const totalEstimado = Math.max(subtotal - descuento, 0)
+
+  const regionSeleccionada =
+    formulario.region === ''
+      ? null
+      : regionesComunas[Number(formulario.region)]
 
   const comunasDisponibles =
-    formulario.region !== ''
-      ? regionesComunas[
-          Number(formulario.region)
-        ].comunas
-      : []
+    regionSeleccionada?.comunas || []
 
   function actualizarCampo(evento) {
-
-    const {
-      name,
-      value
-    } = evento.target
-
-    if (name === 'region') {
-
-      setFormulario(prev => ({
-        ...prev,
-        region: value,
-        comuna: ''
-      }))
-
-      return
-    }
+    const { name, value } = evento.target
 
     setFormulario(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      ...(name === 'region' ? { comuna: '' } : {})
     }))
+
+    setMensajeError('')
   }
 
   async function confirmarCompra(evento) {
-
     evento.preventDefault()
 
-    if (
-      formulario.nombre.trim() === '' ||
-      formulario.correo.trim() === '' ||
-      formulario.region === '' ||
-      formulario.comuna === '' ||
-      formulario.direccion.trim() === ''
-    ) {
+    if (procesando) return
 
-      setMensajeError(
-        'Complete los datos de envío obligatorios.'
-      )
-
+    if (!sesion) {
+      setMensajeError('Debes iniciar sesión para comprar.')
       return
     }
 
+    if (
+      !formulario.nombre.trim() ||
+      !formulario.correo.trim() ||
+      !regionSeleccionada ||
+      !formulario.comuna ||
+      !formulario.direccion.trim()
+    ) {
+      setMensajeError(
+        'Completa los datos de envío obligatorios.'
+      )
+      return
+    }
+
+    if (!comunasDisponibles.includes(formulario.comuna)) {
+      setMensajeError(
+        'Selecciona una comuna válida para la región.'
+      )
+      return
+    }
+
+    setProcesando(true)
+    setMensajeError('')
+
     try {
-
-      const region =
-        regionesComunas[
-          Number(formulario.region)
-        ].region
-
-      setProcesando(true)
-
-        const pedido =
-          await crearPedido({
-          usuarioId:
-          usuario?.id || null,
-
+      const pedido = await crearPedido({
         cliente: {
-          nombre:
-            formulario.nombre.trim(),
-
-          correo:
-            formulario.correo.trim(),
-
-          telefono:
-            formulario.telefono.trim()
+          nombre: formulario.nombre,
+          correo: formulario.correo,
+          telefono: formulario.telefono
         },
 
         envio: {
-          region,
-          comuna:
-            formulario.comuna,
-
-          direccion:
-            formulario.direccion.trim()
+          region: regionSeleccionada.region,
+          comuna: formulario.comuna,
+          direccion: formulario.direccion
         },
 
-        productos:
-          carrito.map(item => ({
-            ...item
-          })),
-
-        cupon,
-
-        subtotal,
-
-        descuento,
-
-        total
+        productos: carrito,
+        cupon
       })
 
+      if (!pedido?.id) {
+        throw new Error(
+          'Spring Boot no confirmó el número de la boleta.'
+        )
+      }
+
+      // Solo vaciamos el carrito después de la respuesta exitosa.
       vaciarCarrito()
 
-      navigate(
-        '/compra-exitosa',
-        {
-          state: {
-            pedidoId: pedido.id
-          }
+      navigate('/compra-exitosa', {
+        replace: true,
+        state: {
+          pedidoId: pedido.id,
+          subtotal: Number(pedido.subtotal),
+          total: Number(pedido.total)
         }
+      })
+    } catch (error) {
+      setMensajeError(
+        error.message || 'No se pudo completar la compra.'
       )
-
-    } catch {
-
-      navigate('/compra-fallida')
+    } finally {
+      setProcesando(false)
     }
   }
 
   if (carrito.length === 0) {
-
     return (
       <>
         <Navbar />
-
         <div className="container py-5 text-center">
-
-          <h2>
-            No hay productos para comprar
-          </h2>
-
+          <h2>No hay productos para comprar</h2>
           <p className="text-muted">
-            Agrega productos antes de continuar
-            con el pago.
+            Agrega productos antes de continuar con el pago.
           </p>
-
-          <Link
-            to="/productos"
-            className="btn btn-primary"
-          >
+          <Link to="/productos" className="btn btn-primary">
             Ver productos
           </Link>
+        </div>
+      </>
+    )
+  }
 
+  if (!sesion) {
+    return (
+      <>
+        <Navbar />
+        <div className="container py-5 text-center">
+          <div className="contacto-card">
+            <h2>Inicia sesión para comprar</h2>
+            <p>
+              Para registrar tu boleta en AQUA-T debes
+              iniciar sesión con una cuenta.
+            </p>
+            <p className="text-muted">
+              Los productos permanecerán en tu carrito.
+            </p>
+            <Link to="/login" className="btn btn-enviar">
+              Iniciar sesión
+            </Link>
+          </div>
         </div>
       </>
     )
@@ -302,181 +213,143 @@ function Checkout() {
       <Navbar />
 
       <section className="contacto-section">
-
         <div className="container">
-
           <h2 className="contacto-titulo">
             Finalizar compra
           </h2>
 
           <p className="contacto-intro">
-            Revisa tus datos y completa la
-            información de envío.
+            Revisa tus datos y completa la información
+            de envío.
           </p>
 
           <div className="row g-4">
-
             <div className="col-12 col-lg-7">
-
               <div className="contacto-card">
-
                 <h4
                   className="mb-4"
-                  style={{
-                    color:
-                      'var(--azul-profundo)'
-                  }}
+                  style={{ color: 'var(--azul-profundo)' }}
                 >
                   Datos del cliente
                 </h4>
 
                 <form onSubmit={confirmarCompra}>
-
                   <div className="mb-3">
-
                     <label className="form-label">
                       Nombre completo
                     </label>
-
                     <input
                       type="text"
-                      className="form-control"
                       name="nombre"
+                      className="form-control"
+                      maxLength={150}
+                      required
                       value={formulario.nombre}
                       onChange={actualizarCampo}
                     />
-
                   </div>
 
                   <div className="mb-3">
-
                     <label className="form-label">
                       Correo
                     </label>
-
                     <input
                       type="email"
-                      className="form-control"
                       name="correo"
+                      className="form-control"
+                      maxLength={100}
+                      required
                       value={formulario.correo}
                       onChange={actualizarCampo}
                     />
-
                   </div>
 
                   <div className="mb-3">
-
                     <label className="form-label">
-                      Teléfono
+                      Teléfono (opcional)
                     </label>
-
                     <input
                       type="tel"
-                      className="form-control"
                       name="telefono"
+                      className="form-control"
+                      maxLength={20}
                       value={formulario.telefono}
                       onChange={actualizarCampo}
                     />
-
                   </div>
 
                   <div className="row">
-
                     <div className="col-md-6 mb-3">
-
                       <label className="form-label">
                         Región
                       </label>
-
                       <select
-                        className="form-select"
                         name="region"
+                        className="form-select"
+                        required
                         value={formulario.region}
                         onChange={actualizarCampo}
                       >
-
                         <option value="">
                           -- Seleccione --
                         </option>
-
-                        {regionesComunas.map(
-                          (item, index) => (
-
-                            <option
-                              key={item.region}
-                              value={index}
-                            >
-                              {item.region}
-                            </option>
-
-                          )
-                        )}
-
+                        {regionesComunas.map((item, index) => (
+                          <option
+                            key={item.region}
+                            value={index}
+                          >
+                            {item.region}
+                          </option>
+                        ))}
                       </select>
-
                     </div>
 
                     <div className="col-md-6 mb-3">
-
                       <label className="form-label">
                         Comuna
                       </label>
-
                       <select
-                        className="form-select"
                         name="comuna"
+                        className="form-select"
+                        required
+                        disabled={!regionSeleccionada}
                         value={formulario.comuna}
                         onChange={actualizarCampo}
-                        disabled={
-                          formulario.region === ''
-                        }
                       >
-
                         <option value="">
                           -- Seleccione --
                         </option>
-
-                        {comunasDisponibles.map(
-                          comuna => (
-
-                            <option
-                              key={comuna}
-                              value={comuna}
-                            >
-                              {comuna}
-                            </option>
-
-                          )
-                        )}
-
+                        {comunasDisponibles.map(comuna => (
+                          <option key={comuna} value={comuna}>
+                            {comuna}
+                          </option>
+                        ))}
                       </select>
-
                     </div>
-
                   </div>
 
                   <div className="mb-3">
-
                     <label className="form-label">
                       Dirección de envío
                     </label>
-
                     <input
                       type="text"
-                      className="form-control"
                       name="direccion"
+                      className="form-control"
+                      maxLength={300}
+                      required
                       value={formulario.direccion}
                       onChange={actualizarCampo}
                     />
-
                   </div>
 
                   {mensajeError && (
-
-                    <div className="text-danger mb-3">
+                    <div
+                      className="text-danger mb-3"
+                      role="alert"
+                    >
                       {mensajeError}
                     </div>
-
                   )}
 
                   <button
@@ -488,96 +361,64 @@ function Checkout() {
                       ? 'Procesando...'
                       : 'Confirmar compra'}
                   </button>
-
                 </form>
-
               </div>
-
             </div>
 
             <div className="col-12 col-lg-5">
-
               <div className="resumen-carrito">
-
-                <h4 className="mb-4">
-                  Resumen
-                </h4>
+                <h4 className="mb-4">Resumen</h4>
 
                 {carrito.map(item => (
-
                   <div
                     className="d-flex justify-content-between mb-2"
                     key={item.id}
                   >
-
                     <span>
-                      {item.nombre}
-                      {' '}x{item.cantidad}
+                      {item.nombre} x{item.cantidad}
                     </span>
-
                     <span>
                       {formatearCLP(
-                        item.precio *
-                        item.cantidad
+                        item.precio * item.cantidad
                       )}
                     </span>
-
                   </div>
-
                 ))}
 
                 <hr />
 
                 <div className="d-flex justify-content-between">
-
-                  <span>
-                    Subtotal
-                  </span>
-
-                  <span>
-                    {formatearCLP(subtotal)}
-                  </span>
-
+                  <span>Subtotal estimado</span>
+                  <span>{formatearCLP(subtotal)}</span>
                 </div>
 
                 {descuento > 0 && (
-
-                  <div className="d-flex justify-content-between text-success">
-
-                    <span>
-                      Descuento {cupon}
-                    </span>
-
-                    <span>
-                      -{formatearCLP(descuento)}
-                    </span>
-
+                  <div
+                    className="d-flex justify-content-between text-success"
+                  >
+                    <span>Descuento {cupon}</span>
+                    <span>-{formatearCLP(descuento)}</span>
                   </div>
-
                 )}
 
                 <hr />
 
-                <div className="d-flex justify-content-between fs-5">
-
-                  <strong>
-                    Total
-                  </strong>
-
-                  <strong>
-                    {formatearCLP(total)}
-                  </strong>
-
+                <div
+                  className="d-flex justify-content-between fs-5"
+                >
+                  <strong>Total estimado</strong>
+                  <strong>{formatearCLP(totalEstimado)}</strong>
                 </div>
 
+                <p className="small text-muted mt-3 mb-0">
+                  Spring Boot verificará los precios y el stock
+                  en MySQL. El total definitivo quedará
+                  registrado en la boleta.
+                </p>
               </div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       <footer>

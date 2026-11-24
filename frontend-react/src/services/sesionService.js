@@ -1,4 +1,3 @@
-
 import { jwtDecode } from 'jwt-decode'
 
 const SESION_KEY = 'aquaT_sesion'
@@ -33,6 +32,12 @@ export function guardarSesion(usuario, token) {
     nombre: usuario.nombre,
     apellidos: usuario.apellidos,
     tipoUsuario: usuario.tipoUsuario,
+
+    telefono: usuario.telefono || '',
+    region: usuario.region || '',
+    comuna: usuario.comuna || '',
+    direccion: usuario.direccion || '',
+
     token
   }
 
@@ -51,9 +56,7 @@ export function guardarSesion(usuario, token) {
 export function obtenerSesion() {
   const datos = sessionStorage.getItem(SESION_KEY)
 
-  if (!datos) {
-    return null
-  }
+  if (!datos) return null
 
   try {
     const sesion = JSON.parse(datos)

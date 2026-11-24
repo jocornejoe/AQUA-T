@@ -8,18 +8,18 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-
 public record BoletaRequest(
+
         @NotBlank(message = "El nombre del cliente es obligatorio")
-        @Size(max = 150, message = "El nombre admite hasta 150 caracteres")
+        @Size(max = 150)
         String clienteNombre,
 
         @NotBlank(message = "El correo del cliente es obligatorio")
         @Email(message = "El correo no es válido")
-        @Size(max = 100, message = "El correo admite hasta 100 caracteres")
+        @Size(max = 100)
         String clienteCorreo,
 
-        @Size(max = 20, message = "El teléfono admite hasta 20 caracteres")
+        @Size(max = 20)
         String clienteTelefono,
 
         @NotBlank(message = "La región de envío es obligatoria")
@@ -29,10 +29,35 @@ public record BoletaRequest(
         String envioComuna,
 
         @NotBlank(message = "La dirección de envío es obligatoria")
-        @Size(max = 300, message = "La dirección admite hasta 300 caracteres")
+        @Size(max = 300)
         String envioDireccion,
 
         @NotEmpty(message = "La compra debe incluir al menos un producto")
         @Valid
-        List<ItemRequest> items) {
+        List<ItemRequest> items,
+
+        @Size(max = 20)
+        String cupon
+) {
+
+    public BoletaRequest(
+            String clienteNombre,
+            String clienteCorreo,
+            String clienteTelefono,
+            String envioRegion,
+            String envioComuna,
+            String envioDireccion,
+            List<ItemRequest> items
+    ) {
+        this(
+                clienteNombre,
+                clienteCorreo,
+                clienteTelefono,
+                envioRegion,
+                envioComuna,
+                envioDireccion,
+                items,
+                null
+        );
+    }
 }
