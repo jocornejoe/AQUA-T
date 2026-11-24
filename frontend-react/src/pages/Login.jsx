@@ -10,12 +10,11 @@ import {
 } from '../utils/validacionesLogin'
 
 import {
-  iniciarSesion
+  iniciarSesion,
+  iniciarSesionGoogle
 } from '../services/authService'
 
-import {
-  guardarSesion
-} from '../services/sesionService'
+import { guardarSesion } from '../services/sesionService'
 
 function Login() {
   const navigate = useNavigate()
@@ -27,12 +26,30 @@ function Login() {
   const [exito, setExito] = useState(false)
   const [procesando, setProcesando] = useState(false)
 
+  function completarInicio(datos) {
+    const { usuario, token } = datos
+
+    guardarSesion(usuario, token)
+
+    setMensajeForm(`Bienvenido/a ${usuario.nombre}.`)
+    setExito(true)
+
+    setTimeout(() => {
+      if (
+        usuario.tipoUsuario === 'Administrador' ||
+        usuario.tipoUsuario === 'Vendedor'
+      ) {
+        navigate('/admin')
+      } else {
+        navigate('/')
+      }
+    }, 800)
+  }
+
   async function enviarLogin(evento) {
     evento.preventDefault()
 
-    if (procesando) {
-      return
-    }
+    if (procesando) return
 
     const nuevosErrores = {
       correo: validarEmailLogin(correo),
@@ -41,10 +58,7 @@ function Login() {
 
     setErrores(nuevosErrores)
 
-    const hayErrores = Object.values(nuevosErrores)
-      .some(error => error !== '')
-
-    if (hayErrores) {
+    if (Object.values(nuevosErrores).some(error => error !== '')) {
       setMensajeForm('Corrige los campos indicados.')
       setExito(false)
       return
@@ -55,56 +69,34 @@ function Login() {
     setExito(false)
 
     try {
-      const datos = await iniciarSesion(
-        correo,
-        contrasena
-      )
-
-      const usuario = datos.usuario
-      const token = datos.token
-
-      guardarSesion(usuario, token)
-
-      setMensajeForm(
-        `Bienvenido/a ${usuario.nombre}.`
-      )
-
-      setExito(true)
-
-      setTimeout(() => {
-        if (
-          usuario.tipoUsuario === 'Administrador' ||
-          usuario.tipoUsuario === 'Vendedor'
-        ) {
-          navigate('/admin')
-        } else {
-          navigate('/')
-        }
-      }, 800)
-
+      const datos = await iniciarSesion(correo, contrasena)
+      completarInicio(datos)
     } catch (error) {
-      console.error(
-        'Error al iniciar sesión:',
-        error.message
-      )
-
-      setMensajeForm(
-        error.message || 'No se pudo iniciar sesión.'
-      )
-
+      setMensajeForm(error.message || 'No se pudo iniciar sesión.')
       setExito(false)
-
     } finally {
       setProcesando(false)
     }
   }
 
-  function loginGoogle() {
-    setMensajeForm(
-      'Google todavía necesita integración con Spring Boot para iniciar una sesión segura.'
-    )
+  async function loginGoogle(credential) {
+    if (procesando) return
 
+    setProcesando(true)
+    setMensajeForm('')
     setExito(false)
+
+    try {
+      const datos = await iniciarSesionGoogle(credential)
+      completarInicio(datos)
+    } catch (error) {
+      setMensajeForm(
+        error.message || 'No se pudo iniciar sesión con Google.'
+      )
+      setExito(false)
+    } finally {
+      setProcesando(false)
+    }
   }
 
   return (
@@ -118,45 +110,30 @@ function Login() {
             <img
               src="/assetsimg/logo.png"
               alt="Logo AQUA-T"
-              style={{
-                maxWidth: '90px'
-              }}
+              style={{ maxWidth: '90px' }}
             />
 
             <h2
               className="fw-bold mt-3"
-              style={{
-                color: 'var(--azul-profundo)'
-              }}
+              style={{ color: 'var(--azul-profundo)' }}
             >
               AQUA-T
             </h2>
           </div>
 
-          <div
-            className="contacto-card"
-            style={{ maxWidth: '480px' }}
-          >
+          <div className="contacto-card" style={{ maxWidth: '480px' }}>
 
             <h3
               className="text-center mb-4"
-              style={{
-                color: 'var(--azul-profundo)'
-              }}
+              style={{ color: 'var(--azul-profundo)' }}
             >
               Iniciar sesión
             </h3>
 
-            <form
-              onSubmit={enviarLogin}
-              noValidate
-            >
+            <form onSubmit={enviarLogin} noValidate>
 
               <div className="mb-3">
-                <label
-                  htmlFor="emailUsuario"
-                  className="form-label"
-                >
+                <label htmlFor="emailUsuario" className="form-label">
                   Correo
                 </label>
 
@@ -166,14 +143,11 @@ function Login() {
                   id="emailUsuario"
                   maxLength={100}
                   value={correo}
-                  onChange={evento =>
-                    setCorreo(evento.target.value)
-                  }
+                  onChange={evento => setCorreo(evento.target.value)}
                 />
 
                 <div className="form-text">
-                  Solo @duoc.cl,
-                  @profesor.duoc.cl o @gmail.com
+                  Solo @duoc.cl, @profesor.duoc.cl o @gmail.com
                 </div>
 
                 <div className="campo-error">
@@ -182,10 +156,7 @@ function Login() {
               </div>
 
               <div className="mb-3">
-                <label
-                  htmlFor="contrasena"
-                  className="form-label"
-                >
+                <label htmlFor="contrasena" className="form-label">
                   Contraseña
                 </label>
 
@@ -195,9 +166,7 @@ function Login() {
                   id="contrasena"
                   maxLength={20}
                   value={contrasena}
-                  onChange={evento =>
-                    setContrasena(evento.target.value)
-                  }
+                  onChange={evento => setContrasena(evento.target.value)}
                 />
 
                 <div className="form-text">
@@ -216,6 +185,7 @@ function Login() {
                       ? 'text-primary fw-semibold'
                       : 'text-danger'
                   }`}
+                  role="status"
                 >
                   {mensajeForm}
                 </div>
@@ -247,9 +217,7 @@ function Login() {
 
               <p className="text-center mt-3 mb-0">
                 ¿No tienes cuenta?{' '}
-                <Link to="/registro">
-                  Regístrate
-                </Link>
+                <Link to="/registro">Regístrate</Link>
               </p>
 
             </form>

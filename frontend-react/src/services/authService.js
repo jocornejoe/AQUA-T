@@ -1,49 +1,56 @@
+const API_BASE = (
+  import.meta.env.VITE_SPRING_API_URL ||
+  'http://localhost:8080'
+).replace(/\/+$/, '')
 
-const API_AUTH =
-  `${import.meta.env.VITE_SPRING_API_URL || 'http://localhost:8080'}/api/v1/auth`
+const API_AUTH = `${API_BASE}/api/v1/auth`
 
-export async function iniciarSesion(correo, contrasena) {
+async function solicitarLogin(ruta, cuerpo) {
   let respuesta
 
   try {
-    respuesta = await fetch(
-      `${API_AUTH}/login`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          correo: correo.trim().toLowerCase(),
-          contrasena
-        })
-      }
-    )
+    respuesta = await fetch(`${API_AUTH}/${ruta}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(cuerpo)
+    })
   } catch {
     throw new Error(
-      'No se pudo conectar con Spring Boot. Verifica que esté iniciado en el puerto 8080.'
+      'No se pudo conectar con Spring Boot. Comprueba el puerto 8080.'
     )
   }
 
-  const datos = await respuesta.json()
-    .catch(() => null)
+  const datos = await respuesta.json().catch(() => null)
 
   if (!respuesta.ok) {
     throw new Error(
       datos?.error ||
-      `Error al iniciar sesión (${respuesta.status})`
+      `No se pudo iniciar sesión (${respuesta.status})`
     )
   }
 
   if (!datos?.token || !datos?.usuario) {
     throw new Error(
-      'Spring Boot no devolvió el token JWT o los datos del usuario.'
+      'Spring Boot no devolvió una sesión válida'
     )
   }
 
-  return {
-    token: datos.token,
-    usuario: datos.usuario
-  }
+  return datos
 }
 
+export function iniciarSesion(correo, contrasena) {
+  return solicitarLogin('login', {
+    correo: correo.trim().toLowerCase(),
+    contrasena
+  })
+}
+
+export function iniciarSesionGoogle(credential) {
+  if (!credential) {
+    throw new Error('Google no devolvió una credencial')
+  }
+
+  return solicitarLogin('google', { credential })
+}
