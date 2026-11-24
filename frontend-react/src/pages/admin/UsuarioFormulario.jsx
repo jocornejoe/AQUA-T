@@ -529,7 +529,7 @@ function actualizarCampo(evento) {
                 <input
                   type="text"
                   name="run"
-                  maxLength="9"
+                  maxLength="10"
                   className="form-control"
                   value={formulario.run}
                   onChange={actualizarCampo}

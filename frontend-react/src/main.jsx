@@ -18,4 +18,4 @@ createRoot(
       <App />
     </GoogleOAuthProvider>
   </StrictMode>
-)S
+)

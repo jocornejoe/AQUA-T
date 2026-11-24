@@ -93,8 +93,8 @@ describe(
           vista.contenedor
 
         llenar(c, {
-          run:
-            '123456785',
+          run: 
+            '12345678-5',
 
           nombre:
             'Jorge',

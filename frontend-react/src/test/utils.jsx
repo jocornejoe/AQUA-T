@@ -18,6 +18,15 @@ let apiProductos = []
 let apiUsuarios = []
 let apiPedidos = []
 
+function tokenDePrueba() {
+  const cabecera = btoa(JSON.stringify({ alg: 'none', typ: 'JWT' }))
+  const carga = btoa(JSON.stringify({
+    sub: 'test@duoc.cl',
+    exp: Math.floor(Date.now() / 1000) + 3600
+  }))
+  return `${cabecera}.${carga}.firma-simulada`
+}
+
 function reiniciarApiMock() {
 
   apiProductos =
@@ -147,11 +156,7 @@ function mockFetch(
 ) {
 
   const ruta =
-    String(url)
-      .replace(
-        'http://localhost:3001',
-        ''
-      )
+    new URL(String(url), 'http://localhost').pathname
 
   const metodo =
     (opciones.method || 'GET')
@@ -160,7 +165,7 @@ function mockFetch(
   // PRODUCTOS
 
   if (
-    ruta === '/api/productos' &&
+    ruta === '/api/v1/productos' &&
     metodo === 'GET'
   ) {
 
@@ -170,7 +175,7 @@ function mockFetch(
   }
 
   if (
-    ruta === '/api/productos' &&
+    ruta === '/api/v1/productos' &&
     metodo === 'POST'
   ) {
 
@@ -212,7 +217,7 @@ function mockFetch(
 
   const productoMatch =
     ruta.match(
-      /^\/api\/productos\/(.+)$/
+      /^\/api\/v1\/productos\/(.+)$/
     )
 
   if (productoMatch) {
@@ -303,7 +308,7 @@ function mockFetch(
 
   if (
     ruta ===
-      '/api/usuarios/login' &&
+      '/api/v1/auth/login' &&
     metodo === 'POST'
   ) {
 
@@ -338,12 +343,15 @@ function mockFetch(
     } = usuario
 
     return respuesta(
-      usuarioSeguro
+      {
+        token: tokenDePrueba(),
+        usuario: usuarioSeguro
+      }
     )
   }
 
   if (
-    ruta === '/api/usuarios' &&
+    ruta === '/api/v1/usuarios' &&
     metodo === 'GET'
   ) {
 
@@ -358,7 +366,7 @@ function mockFetch(
   }
 
   if (
-    ruta === '/api/usuarios' &&
+    ruta === '/api/v1/usuarios' &&
     metodo === 'POST'
   ) {
 
@@ -403,14 +411,14 @@ function mockFetch(
     })
 
     return respuesta(
-      { id },
+      { id, ...datos },
       201
     )
   }
 
   const usuarioMatch =
     ruta.match(
-      /^\/api\/usuarios\/(\d+)$/
+      /^\/api\/v1\/usuarios\/(\d+)$/
     )
 
   if (usuarioMatch) {
@@ -479,10 +487,8 @@ function mockFetch(
             .contrasena
       }
 
-      return respuesta(
-        null,
-        204
-      )
+      const { contrasena, ...usuarioSeguro } = apiUsuarios[indice]
+      return respuesta(usuarioSeguro)
     }
 
     if (
@@ -787,7 +793,8 @@ export function iniciarSesionComo(
       correo:
         'test@duoc.cl',
       nombre,
-      tipoUsuario
+      tipoUsuario,
+      token: tokenDePrueba()
     })
   )
 }

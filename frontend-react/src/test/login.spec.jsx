@@ -72,7 +72,7 @@ describe('Vista Login', () => {
       expect(
         c.textContent
       ).toContain(
-        'Correo o contraseña incorrectos'
+        'Credenciales inválidas'
       )
 
       expect(
