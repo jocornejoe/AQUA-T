@@ -1,16 +1,50 @@
-import CompraExitosa from '../pages/CompraExitosa';
-import { montar } from './utils';
+import CompraExitosa from '../pages/CompraExitosa'
+import { montar } from './utils'
 
 describe('Vista CompraExitosa', () => {
-  let vista;
-  afterEach(() => vista.desmontar());
+  let vista
 
-  it('confirma la compra e indica el número de pedido', () => {
-    vista= montar(<CompraExitosa />, { ruta: { pathname: '/compra-exitosa', state: { pedidoId: 7 } } });
-    const c= vista.contenedor;
+  afterEach(() => {
+    if (vista) {
+      vista.desmontar()
+      vista = null
+    }
+  })
 
-    expect(c.querySelector('h1').textContent).toContain('Compra realizada con éxito');
-    expect(c.textContent).toContain('Número de pedido:');
-    expect(c.querySelector('strong').textContent).toBe('#7');
-  });
-});
+  it(
+    'confirma la compra e indica el número de boleta',
+    () => {
+      vista = montar(
+        <CompraExitosa />,
+        {
+          ruta: {
+            pathname: '/compra-exitosa',
+            state: {
+              pedidoId: 7,
+              subtotal: 120000,
+              total: 108000
+            }
+          }
+        }
+      )
+
+      const c = vista.contenedor
+
+      expect(c.querySelector('h1').textContent)
+        .toContain('¡Compra registrada con éxito!')
+
+      expect(c.textContent)
+        .toContain('Número de boleta:')
+
+      expect(c.textContent)
+        .toContain('Descuento:')
+
+      expect(c.textContent)
+        .toContain('Total de la boleta:')
+
+      expect(
+        c.querySelector('strong').textContent
+      ).toBe('#7')
+    }
+  )
+})

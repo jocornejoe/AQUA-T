@@ -1,9 +1,6 @@
-
 import Registro from '../pages/Registro'
 
-import {
-  regionesComunas
-} from '../data/regiones'
+import { regionesComunas } from '../data/regiones'
 
 import {
   normalizarRun,
@@ -26,34 +23,40 @@ describe('Registro con Spring Boot', () => {
 
   beforeEach(() => {
     limpiarAlmacenamiento()
+
+    vista = null
     peticionRegistrada = null
 
-    window.fetch.and.callFake(async (url, opciones = {}) => {
-      if (
-        String(url).endsWith('/api/v1/auth/registro') &&
-        opciones.method === 'POST'
-      ) {
-        peticionRegistrada = JSON.parse(opciones.body)
+    window.fetch.and.callFake(
+      async (url, opciones = {}) => {
+        if (
+          String(url).endsWith('/api/v1/auth/registro') &&
+          opciones.method === 'POST'
+        ) {
+          peticionRegistrada = JSON.parse(
+            opciones.body
+          )
+
+          return {
+            ok: true,
+            status: 201,
+            json: async () => ({
+              id: 4,
+              nombre: peticionRegistrada.nombre,
+              tipoUsuario: 'Cliente'
+            })
+          }
+        }
 
         return {
-          ok: true,
-          status: 201,
+          ok: false,
+          status: 404,
           json: async () => ({
-            id: 4,
-            nombre: peticionRegistrada.nombre,
-            tipoUsuario: 'Cliente'
+            error: 'Ruta no simulada'
           })
         }
       }
-
-      return {
-        ok: false,
-        status: 404,
-        json: async () => ({
-          error: 'Ruta no simulada'
-        })
-      }
-    })
+    )
   })
 
   afterEach(() => {
@@ -63,7 +66,7 @@ describe('Registro con Spring Boot', () => {
     }
   })
 
-  it('acepta RUN con puntos y guion', () => {
+  it('acepta RUN con puntos y guion al normalizarlo', () => {
     expect(
       normalizarRun('12.345.678-5')
     ).toBe('123456785')
@@ -76,9 +79,15 @@ describe('Registro con Spring Boot', () => {
       runValido('12345678-5')
     ).toBeTrue()
 
+    // El formulario exige escribir el RUN sin puntos.
     expect(
       validarRun('12.345.678-9')
-    ).not.toBe('')
+    ).toContain('sin puntos')
+
+    // Con formato correcto, comprueba el dígito.
+    expect(
+      validarRun('12345678-9')
+    ).toContain('Dígito verificador incorrecto')
   })
 
   it('registra un Cliente en Spring Boot', async () => {
@@ -100,9 +109,7 @@ describe('Registro con Spring Boot', () => {
       direccion: 'Calle Humbug 123'
     })
 
-    clic(
-      boton(contenedor, 'Registrar')
-    )
+    clic(boton(contenedor, 'Registrar'))
 
     await esperarActualizacion()
 
@@ -120,9 +127,8 @@ describe('Registro con Spring Boot', () => {
       peticionRegistrada.tipoUsuario
     ).toBeUndefined()
 
-    expect(
-      contenedor.textContent
-    ).toContain('¡Registro exitoso!')
+    expect(contenedor.textContent)
+      .toContain('¡Registro exitoso!')
 
     expect(
       contenedor.querySelector('[name="run"]').value
@@ -146,16 +152,16 @@ describe('Registro con Spring Boot', () => {
       direccion: 'Calle Humbug 123'
     })
 
-    clic(
-      boton(contenedor, 'Registrar')
-    )
+    clic(boton(contenedor, 'Registrar'))
 
     await esperarActualizacion()
 
     expect(peticionRegistrada).toBeNull()
 
-    expect(
-      contenedor.textContent
-    ).toContain('RUN inválido')
+    expect(contenedor.textContent)
+      .toContain('Dígito verificador incorrecto')
+
+    expect(contenedor.textContent)
+      .toContain('para 12345678 corresponde 5')
   })
 })
