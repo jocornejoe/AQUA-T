@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+
 import Home from './pages/Home'
 import Productos from './pages/Productos'
 import DetalleProducto from './pages/DetalleProducto'
@@ -9,21 +10,25 @@ import Nosotros from './pages/Nosotros'
 import Blogs from './pages/Blogs'
 import BlogDetalle from './pages/BlogDetalle'
 import Contacto from './pages/Contacto'
+
 import Registro from './pages/Registro'
 import RegistroGoogle from './pages/RegistroGoogle'
 import Login from './pages/Login'
+
 import Carrito from './pages/Carrito'
 import Checkout from './pages/Checkout'
 import CompraExitosa from './pages/CompraExitosa'
-import RutaSoloInvitados from './components/RutaSoloInvitados'
 import CompraFallida from './pages/CompraFallida'
+
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminProductos from './pages/admin/AdminProductos'
 import ProductoFormulario from './pages/admin/ProductoFormulario'
 import AdminUsuarios from './pages/admin/AdminUsuarios'
 import UsuarioFormulario from './pages/admin/UsuarioFormulario'
 import AdminBoletas from './pages/admin/AdminBoletas'
+
 import RutaProtegida from './components/RutaProtegida'
+import RutaSoloInvitados from './components/RutaSoloInvitados'
 
 const ADMIN = ['Administrador']
 const EQUIPO = ['Administrador', 'Vendedor']
@@ -32,65 +37,154 @@ function App() {
   return (
     <Router>
       <Routes>
+
+        {/* TIENDA PÚBLICA */}
+
         <Route path="/" element={<Home />} />
         <Route path="/productos" element={<Productos />} />
         <Route path="/productos/:id" element={<DetalleProducto />} />
         <Route path="/ofertas" element={<Ofertas />} />
+
         <Route path="/categorias" element={<Categorias />} />
-        <Route path="/categorias/:nombre" element={<Categorias />} />
+        <Route
+          path="/categorias/:nombre"
+          element={<Categorias />}
+        />
+
         <Route path="/nosotros" element={<Nosotros />} />
         <Route path="/blogs" element={<Blogs />} />
         <Route path="/blogs/:slug" element={<BlogDetalle />} />
-        <Route path="/registro" element={<Registro />} />
-        <Route path="/registro/google" element={<RutaSoloInvitados><RegistroGoogle /></RutaSoloInvitados>}/>
-        <Route path="/registro" element={<RutaSoloInvitados><Registro /></RutaSoloInvitados>}/>
         <Route path="/contacto" element={<Contacto />} />
-        <Route path="/login" element={<RutaSoloInvitados><Login /></RutaSoloInvitados>}/>
+
+        {/* AUTENTICACIÓN: SOLO SIN SESIÓN */}
+
+        <Route
+          path="/login"
+          element={
+            <RutaSoloInvitados>
+              <Login />
+            </RutaSoloInvitados>
+          }
+        />
+
+        <Route
+          path="/registro"
+          element={
+            <RutaSoloInvitados>
+              <Registro />
+            </RutaSoloInvitados>
+          }
+        />
+
+        <Route
+          path="/registro/google"
+          element={
+            <RutaSoloInvitados>
+              <RegistroGoogle />
+            </RutaSoloInvitados>
+          }
+        />
+
+        {/* COMPRAS */}
+
         <Route path="/carrito" element={<Carrito />} />
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/mi-cuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>}/>
-        <Route path="/compra-exitosa" element={<CompraExitosa />} />
-        <Route path="/compra-fallida" element={<CompraFallida />} />
-        <Route path="/admin" element={
-          <RutaProtegida rolesPermitidos={EQUIPO}>
-            <AdminDashboard />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/productos" element={
-          <RutaProtegida rolesPermitidos={EQUIPO}>
-            <AdminProductos />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/boletas" element={
-          <RutaProtegida rolesPermitidos={EQUIPO}>
-            <AdminBoletas />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/productos/nuevo" element={
-          <RutaProtegida rolesPermitidos={ADMIN}>
-            <ProductoFormulario />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/productos/:id/editar" element={
-          <RutaProtegida rolesPermitidos={ADMIN}>
-            <ProductoFormulario />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/usuarios" element={
-          <RutaProtegida rolesPermitidos={ADMIN}>
-            <AdminUsuarios />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/usuarios/nuevo" element={
-          <RutaProtegida rolesPermitidos={ADMIN}>
-            <UsuarioFormulario />
-          </RutaProtegida>
-        } />
-        <Route path="/admin/usuarios/:id/editar" element={
-          <RutaProtegida rolesPermitidos={ADMIN}>
-            <UsuarioFormulario />
-          </RutaProtegida>
-        } />
+        <Route
+          path="/compra-exitosa"
+          element={<CompraExitosa />}
+        />
+        <Route
+          path="/compra-fallida"
+          element={<CompraFallida />}
+        />
+
+        {/* PERFIL Y MIS COMPRAS */}
+
+        <Route
+          path="/mi-cuenta"
+          element={
+            <RutaProtegida>
+              <MiCuenta />
+            </RutaProtegida>
+          }
+        />
+
+        {/* ADMINISTRADOR Y VENDEDOR */}
+
+        <Route
+          path="/admin"
+          element={
+            <RutaProtegida rolesPermitidos={EQUIPO}>
+              <AdminDashboard />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/productos"
+          element={
+            <RutaProtegida rolesPermitidos={EQUIPO}>
+              <AdminProductos />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/boletas"
+          element={
+            <RutaProtegida rolesPermitidos={EQUIPO}>
+              <AdminBoletas />
+            </RutaProtegida>
+          }
+        />
+
+        {/* FUNCIONES EXCLUSIVAS DEL ADMINISTRADOR */}
+
+        <Route
+          path="/admin/productos/nuevo"
+          element={
+            <RutaProtegida rolesPermitidos={ADMIN}>
+              <ProductoFormulario />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/productos/:id/editar"
+          element={
+            <RutaProtegida rolesPermitidos={ADMIN}>
+              <ProductoFormulario />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/usuarios"
+          element={
+            <RutaProtegida rolesPermitidos={ADMIN}>
+              <AdminUsuarios />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/usuarios/nuevo"
+          element={
+            <RutaProtegida rolesPermitidos={ADMIN}>
+              <UsuarioFormulario />
+            </RutaProtegida>
+          }
+        />
+
+        <Route
+          path="/admin/usuarios/:id/editar"
+          element={
+            <RutaProtegida rolesPermitidos={ADMIN}>
+              <UsuarioFormulario />
+            </RutaProtegida>
+          }
+        />
+
       </Routes>
     </Router>
   )
