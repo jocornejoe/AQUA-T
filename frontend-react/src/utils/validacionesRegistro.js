@@ -1,4 +1,3 @@
-
 const dominiosPermitidos =
   /^[^\s@]+@(duoc\.cl|profesor\.duoc\.cl|gmail\.com)$/i
 
@@ -11,6 +10,8 @@ const formatoRun =
 const runSinFormato =
   /^\d{6,8}[\dK]$/
 
+// Permite escribir RUN sin puntos y con guion.
+// También limpia puntos si alguien pega un RUN formateado.
 export function formatearRunEntrada(valor) {
   const texto = String(valor ?? '')
     .toUpperCase()
@@ -20,30 +21,28 @@ export function formatearRunEntrada(valor) {
   const posicionGuion = texto.indexOf('-')
 
   if (posicionGuion === -1) {
-    return texto
-      .replace(/\D/g, '')
-      .slice(0, 8)
+    return texto.replace(/\D/g, '').slice(0, 8)
   }
 
-  const numero = texto
-    .slice(0, posicionGuion)
+  const numero = texto.slice(0, posicionGuion)
     .replace(/\D/g, '')
     .slice(0, 8)
 
-  const dv = texto
-    .slice(posicionGuion + 1)
+  const dv = texto.slice(posicionGuion + 1)
     .replace(/[^0-9K]/g, '')
     .slice(0, 1)
 
   return `${numero}-${dv}`
 }
 
+// Formato utilizado al enviar a Spring Boot y MySQL.
 export function normalizarRun(run) {
   return String(run ?? '')
-    .replace(/[.\-\s]/g, '')
+    .replace(/[.\s-]/g, '')
     .toUpperCase()
 }
 
+// Algoritmo chileno módulo 11.
 export function calcularDvRun(numeroRun) {
   const numero = String(numeroRun ?? '')
 
@@ -52,13 +51,12 @@ export function calcularDvRun(numeroRun) {
   }
 
   let suma = 0
-  let multiplo = 2
+  let factor = 2
 
   for (let i = numero.length - 1; i >= 0; i--) {
-    suma += Number(numero[i]) * multiplo
+    suma += Number(numero[i]) * factor
 
-    multiplo =
-      multiplo === 7 ? 2 : multiplo + 1
+    factor = factor === 7 ? 2 : factor + 1
   }
 
   const resultado = 11 - (suma % 11)
@@ -69,6 +67,7 @@ export function calcularDvRun(numeroRun) {
   return String(resultado)
 }
 
+// Verifica que el dígito corresponda al número.
 export function runValido(run) {
   const limpio = normalizarRun(run)
 
@@ -82,26 +81,38 @@ export function runValido(run) {
   return calcularDvRun(numero) === dvIngresado
 }
 
+// Valida lo escrito en el formulario.
 export function validarRun(run) {
-  const valor = String(run ?? '').trim().toUpperCase()
+  const valor = String(run ?? '')
+    .trim()
+    .toUpperCase()
 
   if (valor === '') {
     return 'Ingrese su RUN o RUT'
   }
 
   if (!formatoRun.test(valor)) {
-    return 'Ingrese el RUN sin puntos y con guion (ej.: 12345678-5)'
+    return (
+      'Escriba el RUN sin puntos, con guion y ' +
+      'dígito verificador. Ej.: 12345678-5 o 7234202-K'
+    )
   }
 
   if (!runValido(valor)) {
-    return 'RUN inválido: revise el dígito verificador'
+    const numero = valor.split('-')[0]
+    const dvEsperado = calcularDvRun(numero)
+
+    return (
+      `Dígito verificador incorrecto: ` +
+      `para ${numero} corresponde ${dvEsperado}`
+    )
   }
 
   return ''
 }
 
 export function validarNombreRegistro(nombre) {
-  const valor = nombre.trim()
+  const valor = String(nombre ?? '').trim()
 
   if (valor === '') {
     return 'Ingrese su nombre'
@@ -115,7 +126,7 @@ export function validarNombreRegistro(nombre) {
 }
 
 export function validarApellidos(apellidos) {
-  const valor = apellidos.trim()
+  const valor = String(apellidos ?? '').trim()
 
   if (valor === '') {
     return 'Ingrese sus apellidos'
@@ -129,7 +140,7 @@ export function validarApellidos(apellidos) {
 }
 
 export function validarCorreoRegistro(correo) {
-  const valor = correo.trim()
+  const valor = String(correo ?? '').trim()
 
   if (valor === '') {
     return 'Ingrese su correo'
@@ -140,7 +151,10 @@ export function validarCorreoRegistro(correo) {
   }
 
   if (!dominiosPermitidos.test(valor)) {
-    return 'Solo dominios: @duoc.cl, @profesor.duoc.cl o @gmail.com'
+    return (
+      'Solo dominios: @duoc.cl, ' +
+      '@profesor.duoc.cl o @gmail.com'
+    )
   }
 
   return ''
@@ -177,7 +191,7 @@ export function validarConfirmarContrasena(
 }
 
 export function validarTelefonoRegistro(telefono) {
-  const valor = telefono.trim()
+  const valor = String(telefono ?? '').trim()
 
   if (
     valor !== '' &&
@@ -208,23 +222,19 @@ export function validarFechaNacimiento(fecha) {
 }
 
 export function validarRegion(region) {
-  if (region === '') {
-    return 'Seleccione una región'
-  }
-
-  return ''
+  return region === ''
+    ? 'Seleccione una región'
+    : ''
 }
 
 export function validarComuna(comuna) {
-  if (comuna === '') {
-    return 'Seleccione una comuna'
-  }
-
-  return ''
+  return comuna === ''
+    ? 'Seleccione una comuna'
+    : ''
 }
 
 export function validarDireccion(direccion) {
-  const valor = direccion.trim()
+  const valor = String(direccion ?? '').trim()
 
   if (valor === '') {
     return 'Ingrese su dirección'
